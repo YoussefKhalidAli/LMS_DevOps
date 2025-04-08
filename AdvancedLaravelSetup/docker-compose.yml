@@ -1,19 +1,20 @@
 version: '3.8'
 
 services:
-app:
-build:
-context: .
-dockerfile: Dockerfile
-volumes:
- - ./lms:/var/www/lms
+  app:
+    container_name: laravel_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./lms:/var/www/lms
 
-nginx:
-image: nginx:latest
-ports:
- - "8000:80"
-volumes:
- - ./lms:/var/www/lms
- - ./nginx.conf:/etc/nginx/conf.d/default.conf
-depends_on:
- - app
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8000:80"
+    volumes:
+      - ./lms:/var/www/lms
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
