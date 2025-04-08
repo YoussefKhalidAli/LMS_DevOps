@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ./lms:/var/www/lms
+      - /var/www/lms:/var/www/lms
 
   nginx:
     image: nginx:latest
