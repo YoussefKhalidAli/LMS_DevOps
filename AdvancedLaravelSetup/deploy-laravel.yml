@@ -1,0 +1,104 @@
+---
+
+- name: Complete setup for Laravel LMS with Docker
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Install git and Docker dependencies
+      apt:
+        name:
+          - git
+          - curl
+          - unzip
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Clone LMS_DevOps repository for Docker setup
+      git:
+        repo: https://github.com/YoussefKhalidAli/LMS_DevOps.git
+        dest: /tmp/LMS_DevOps
+        version: main
+        force: yes
+
+    - name: Creat /opt/laravel
+      file:
+        path: /opt/laravel
+        state: directory
+        mode: '0755'
+
+    - name: Copy Dockerfile from repository to current directory
+      copy:
+        src: /tmp/LMS_DevOps/AdvancedLaravelSetup/Dockerfile
+        dest: /opt/laravel/Dockerfile
+        remote_src: yes
+
+    - name: Copy nginx.conf from repository to current directory
+      copy:
+        src: /tmp/LMS_DevOps/AdvancedLaravelSetup/nginx.conf
+        dest: /opt/laravel/nginx.conf
+        remote_src: yes
+
+    - name: Copy docker-compose.yml from repository to current directory
+      copy:
+        src: /tmp/LMS_DevOps/AdvancedLaravelSetup/docker-compose.yml
+        dest: /opt/laravel/docker-compose.yml
+        remote_src: yes
+
+    - name: Build and start the Docker containers
+      command: docker-compose up --build -d
+      args:
+        chdir: /opt/laravel  # Change to the directory where the docker-compose.yml is located
+
+    - name: Wait for the application container to be ready
+      wait_for:
+        host: "127.0.0.1"
+        port: 8000
+        delay: 10
+        timeout: 60
+
+    - name: Check if /var/www/lms exists inside the container
+      shell: docker exec laravel_app test -d /var/www/lms
+      register: lms_dir_check
+      ignore_errors: true
+
+    - name: Clone LMS repository in the container if /var/www/lms does not exist
+      command: docker exec laravel_app git clone https://github.com/abdelrahim3AA/Learning-Management-Systems-LMS_GP.git /var/www/lms
+      when: lms_dir_check.rc != 0
+
+    - name: Run composer install in the container
+      command: docker exec -w /var/www/lms laravel_app composer install
+
+    - name: Copy .env.example to .env in the container
+      command: docker exec -w /var/www/lms laravel_app cp .env.example .env
+
+    - name: Generte Laravel aplication key
+      command: docker exec -w /var/www/lms laravel_app php artisan key:generate
+
+    - name: Set the correct permissions for storage and cache directories
+      command: docker exec -w /var/www/lms laravel_app chown -R www-data:www-data storage bootstrap/cache
+
+    - name: Set the correct permissions for database directory
+      command: docker exec -w /var/www/lms laravel_app chown -R www-data:www-data database
+
+    - name: Set the correct permissions for the entire storage directory
+      command: docker exec -w /var/www/lms laravel_app chmod -R 775 storage
+
+    - name: Set the correct permissions for the entire bootstrap/cache directory
+      command: docker exec -w /var/www/lms laravel_app chmod -R 775 bootstrap/cache
+
+    - name: Create SQLite database file in the container
+      command: docker exec -w /var/www/lms laravel_app touch /var/www/lms/database/database.sqlite
+
+    - name: Run Laravel migrations in the container
+      command: docker exec -w /var/www/lms laravel_app php artisan migrate
+
+    - name: Clear Laravel routes in the container
+      command: docker exec -w /var/www/lms laravel_app php artisan route:clear
+
+    - name: Clear Laravel config in the container
+      command: docker exec -w /var/www/lms laravel_app php artisan config:clear
+
+    - name: Clear Laravel cache in the container
+      command: docker exec -w /var/www/lms laravel_app php artisan cache:clear
