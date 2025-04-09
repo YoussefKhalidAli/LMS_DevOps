@@ -42,14 +42,14 @@
 
     - name: Copy docker-compose.yml from repository to current directory
       copy:
-        src: /tmp/LMS_DevOps/AdvancedLaravelSetup/docker-compose.yml
+        src: /tmp/LMS_DevOps/AdvancedLaravelSetup/docker-compose
         dest: /opt/laravel/docker-compose.yml
         remote_src: yes
 
     - name: Build and start the Docker containers
       command: docker-compose up --build -d
       args:
-        chdir: /opt/laravel  # Change to the directory where the docker-compose.yml is located
+        chdir: /opt/laravel
 
     - name: Wait for the application container to be ready
       wait_for:
