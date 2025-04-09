@@ -25,5 +25,5 @@
 
 - name: Copy docker-compose.yml from repository to current directory
   copy:
-    src: /tmp/LMS_DevOps/AdvancedLaravelSetup/docker-compose.yml
+    src: /tmp/LMS_DevOps/AdvancedLaravelSetup/docker-compose
     dest: /opt/laravel/docker-compose.yml
