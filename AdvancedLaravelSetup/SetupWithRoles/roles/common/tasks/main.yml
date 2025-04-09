@@ -1,0 +1,10 @@
+- name: Install git and Docker dependencies
+  apt:
+    name:
+      - git
+      - curl
+      - unzip
+      - docker.io
+      - docker-compose
+    state: present
+    update_cache: yes
