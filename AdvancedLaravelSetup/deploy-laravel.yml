@@ -46,8 +46,8 @@
         dest: /opt/laravel/docker-compose.yml
         remote_src: yes
 
-    - name: Build and start the Docker containers
-      command: docker-compose up --build -d
+    - name: Start the docker containers
+      command: docker-compose up -d
       args:
         chdir: /opt/laravel
 
@@ -76,20 +76,18 @@
     - name: Generte Laravel aplication key
       command: docker exec -w /var/www/lms laravel_app php artisan key:generate
 
-    - name: Set the correct permissions for storage and cache directories
-      command: docker exec -w /var/www/lms laravel_app chown -R www-data:www-data storage bootstrap/cache
+    - name: Fix permissions for storage, bootstrap/cache, and database
+      command: >
+        docker exec -w /var/www/lms laravel_app sh -c "chown -R www-data:www-data storage bootstrap/cache database && chmod -R 775 storage bootstrap/cache"
 
-    - name: Set the correct permissions for database directory
-      command: docker exec -w /var/www/lms laravel_app chown -R www-data:www-data database
-
-    - name: Set the correct permissions for the entire storage directory
-      command: docker exec -w /var/www/lms laravel_app chmod -R 775 storage
-
-    - name: Set the correct permissions for the entire bootstrap/cache directory
-      command: docker exec -w /var/www/lms laravel_app chmod -R 775 bootstrap/cache
+    - name: Check if SQLite DB file exists
+      shell: docker exec laravel_app test -f /var/www/lms/database/database.sqlite
+      register: sqlite_check
+      ignore_errors: true
 
     - name: Create SQLite database file in the container
       command: docker exec -w /var/www/lms laravel_app touch /var/www/lms/database/database.sqlite
+      when: sqlite_check.rc != 0
 
     - name: Run Laravel migrations in the container
       command: docker exec -w /var/www/lms laravel_app php artisan migrate
@@ -102,3 +100,9 @@
 
     - name: Clear Laravel cache in the container
       command: docker exec -w /var/www/lms laravel_app php artisan cache:clear
+
+    - name: Install Laravel Log Viewer via Composer
+      command: docker exec -w /var/www/lms laravel_app composer require rap2hpoutre/laravel-log-viewer
+
+    - name: Add log viewer route in web.php inside container
+      command: docker exec -w /var/www/lms laravel_app sh -c "echo \"Route::get('/logs', '\\\Rap2hpoutre\\\LaravelLogViewer\\\LogViewerController@index');\" >> routes/web.php"
