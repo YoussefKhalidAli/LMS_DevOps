@@ -1,0 +1,149 @@
+---
+- name: Install and configure K3s (single node)
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Ensure curl is installed
+      apt:
+        name: curl
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure curl is installed (RHEL-based)
+      yum:
+        name: curl
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Install K3s using official install script
+      shell: |
+        curl -sfL https://get.k3s.io | sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for K3s service to be active
+      systemd:
+        name: k3s
+        enabled: yes
+        state: started
+
+    - name: Ensure .kube directory exists
+      file:
+        path: "{{ ansible_env.HOME }}/.kube"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+
+    - name: Copy kubeconfig to user directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ ansible_env.HOME }}/.kube/config"
+        remote_src: yes
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+        mode: "0600"
+
+    - name: Update kubeconfig server address (for local use)
+      replace:
+        path: /home/{{ ansible_user_id }}/.kube/config
+        regexp: "https://127.0.0.1:6443"
+        replace: "https://{{ ansible_host }}:6443"
+      when: ansible_host != '127.0.0.1'
+
+    - name: Apply laravel deployment
+      command: kubectl apply -f laravel-deployment.yml
+
+    - name: Apply nginx
+      command: kubectl apply -f nginx.yml
+
+    - name: Apply nginx-conf
+      command: kubectl apply -f nginx-conf.yml
+
+    - name: Wait for Laravel pod to be ready
+      shell: |
+        until kubectl get pods -l app=laravel-app -o jsonpath='{.items[0].status.phase}' | grep -q Running; do
+          echo "Waiting for Laravel pod to be in Running state..."
+          sleep 5
+        done
+      register: wait_result
+      changed_when: false
+
+    - name: Get the pod name for laravel deployment
+      command: kubectl get pods -l app=laravel-app -o jsonpath='{.items[0].metadata.name}'
+      become: yes
+      register: laravel_pod_name
+
+    - name: Check if SQLite DB file exists in Laravel pod
+      shell: kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- test -f /var/www/lms/database/database.sqlite
+      register: sqlite_check
+      ignore_errors: true
+      changed_when: false
+
+    - name: Create SQLite DB file if not found in Laravel pod
+      shell: kubectl exec {{ laravel_podname.stdout }} -c laravel -- touch /var/www/lms/database/database.sqlite
+      when: sqlite_check.rc != 0
+
+    - name: Ensure correct permissions for SQLite database file
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "chown www-data:www-data /var/www/lms/database/database.sqlite && chmod 664 /var/www/lms/database/database.sqlite"
+      when: laravel_pod_name.stdout != ""
+
+    - name: Fix permissions for storage, bootstrap/cache, and database
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "cd /var/www/lms && chown -R www-data:www-data storage bootstrap/cache database && chmod -R 775 storage bootstrap/cache"
+      when: laravel_pod_name.stdout != ""
+
+    - name: Ensure /var/www/lms/storage/framework/views exists and fix permissions
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "mkdir -p /var/www/lms/storage/framework/views && chown -R www-data:www-data /var/www/lms/storage && chmod -R 775 /var/www/lms/storage"
+      when: laravel_pod_name.stdout != ""
+
+    - name: Ensure Laravel cache/view directories exist and have correct permissions
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "
+        mkdir -p /var/www/lms/storage/framework/{views,sessions,cache} &&
+        chown -R www-data:www-data /var/www/lms/storage &&
+        chmod -R 775 /var/www/lms/storage"
+
+    - name: Ensure logs directory exists in Laravel pod
+      command: kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "mkdir -p /var/www/lms/storage/logs"
+      when: laravel_pod_name.stdout != ""
+
+    - name: Fix permissions for logs directory in Laravel pod
+      command: kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "chown -R www-data:www-data /var/www/lms/storage/logs && chmod -R 775 /var/www/lms/storage/logs"
+      when: laravel_pod_name.stdout != ""
+
+    - name: Install Laravel Log Viewer via Composer
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "cd /var/www/lms && composer require rap2hpoutre/laravel-log-viewer"
+
+    - name: Check if log route already exists
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "grep -q 'LogViewerController@index' /var/www/lms/routes/web.php"
+      register: log_route_exists
+      failed_when: false
+
+    - name: Add log viewer route in web.php inside container
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -c laravel -- sh -c "echo \"Route::get('/logs', '\\\Rap2hpoutre\\\LaravelLogViewer\\\LogViewerController@index');\" >> /var/www/lms/routes/web.php"
+      when: log_route_exists.rc != 0
+
+    - name: Fix permissions for Laravel storage, cache, and logs
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -- sh -c "
+        cd /var/www/lms &&
+        chown -R www-data:www-data storage bootstrap/cache &&
+        chmod -R 775 storage bootstrap/cache &&
+        chown -R www-data:www-data storage/logs &&
+        chmod -R 775 storage/logs"
+      when: laravel_pod_name.stdout != ""
+
+    - name: Clear Laravel caches (config, view, app)
+      command: >
+        kubectl exec {{ laravel_pod_name.stdout }} -- sh -c "
+        cd /var/www/lms &&
+        php artisan config:clear &&
+        php artisan cache:clear &&
+        php artisan view:clear"
+      when: laravel_pod_name.stdout != ""
