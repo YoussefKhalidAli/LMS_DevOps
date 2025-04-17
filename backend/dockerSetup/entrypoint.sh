@@ -1,27 +1,29 @@
 #!/bin/bash
 
+# Set correct permissions for Laravel directories
 cd /var/www/lms
 
-chown -R www-data:www-data storage bootstrap/cache
+# Ensure storage, bootstrap/cache, and database are writable
 chmod -R 775 storage bootstrap/cache
+chmod -R 775 database
 
-if [ -f database/database.sqlite ]; then
+chown -R www-data:www-data storage bootstrap/cache database
+
+if [ ! -f database/database.sqlite ]; then
+    touch database/database.sqlite
     chown www-data:www-data database/database.sqlite
     chmod 664 database/database.sqlite
-
 fi
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
 
-mkdir -p database
-touch database/database.sqlite
-chown -R www-data:www-data database
-chmod -R 775 database
-chmod 664 database/database.sqlite
+if [ ! -d "vendor" ]; then
+    composer install --no-interaction --prefer-dist
+fi
 
-composer install --no-interaction --prefer-dist
-cp .env.example .env
-php artisan key:generate
+if [ ! -f .env ]; then
+    cp .env.example .env
+    php artisan key:generate
+fi
+
 php artisan migrate --force
 php artisan config:clear
 php artisan cache:clear
