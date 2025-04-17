@@ -17,16 +17,10 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www
-
-RUN git clone https://github.com/abdelrahim3AA/Learning-Management-Systems-LMS_GP.git lms
-
 WORKDIR /var/www/lms
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-
-RUN npm install && npm run build
 
 EXPOSE 9000
 ENTRYPOINT ["entrypoint.sh"]
