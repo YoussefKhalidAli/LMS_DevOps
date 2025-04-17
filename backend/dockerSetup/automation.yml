@@ -32,6 +32,12 @@
         dest: "{{ laravel_path }}/docker-compose.yml"
         mode: '0644'
 
+    - name: Copy .env
+      copy:
+        src: "{{ laravel_path }}/.env.example"
+        dest: "{{ laravel_path }}/.env"
+        mode: '0644'
+
     - name: Copy entrypoint.sh
       copy:
         src: entrypoint.sh
