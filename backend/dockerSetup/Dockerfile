@@ -1,26 +1,42 @@
-FROM php:8.2-fpm
+FROM composer:2 AS composer
 
-RUN apt-get update && apt-get install -y \
-    git \
+WORKDIR /app
+COPY . /app
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+FROM php:8.2-fpm-alpine
+
+RUN apk add --no-cache \
+    bash \
+    nginx \
+    supervisor \
     curl \
-    zip \
+    git \
     unzip \
-    npm \
-    sqlite3 \
-    libsqlite3-dev \
+    icu-dev \
     libzip-dev \
     libpng-dev \
-    libonig-dev \
     libxml2-dev \
-    && docker-php-ext-install pdo pdo_sqlite xml mbstring zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    oniguruma-dev \
+    && docker-php-ext-install \
+        pdo_mysql \
+        mbstring \
+        bcmath \
+        exif \
+        zip \
+        intl \
+        gd \
+    && rm -rf /var/cache/apk/*
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+WORKDIR /var/www/html
 
-WORKDIR /var/www/lms
+COPY --from=composer /app /var/www/html
+
+COPY nginx.conf /etc/nginx/http.d/default.conf
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 9000
-ENTRYPOINT ["entrypoint.sh"]
+EXPOSE 80
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
