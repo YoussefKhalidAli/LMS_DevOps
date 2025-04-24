@@ -35,7 +35,7 @@ spec:
         - name: laravel
           image: youssefkali/laravel-lms:latest
           ports:
-            - containerPort: 8000
+            - containerPort: 80
           env:
             - name: APP_BASE_PATH
               value: "/var/www/html"
