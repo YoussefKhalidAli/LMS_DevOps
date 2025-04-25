@@ -1,9 +1,0 @@
-- name: Complete setup for Laravel LMS with Docker
-  hosts: localhost
-  become: yes
-
-  roles:
-    - common       # Install dependencies
-    - setup        # Clone LMS_DevOps repository for Docker setup
-    - docker       # Docker setup
-    - permissions  # Set the permissions

@@ -1,0 +1,2 @@
+backend/k3sSetup/mysql-secrets.yml
+backend/k3sSetup/mysql-init-script.yml

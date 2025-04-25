@@ -1,0 +1,35 @@
+- name: Update frontend
+  hosts: localhost
+  become: yes
+  vars:
+    front_path: /var/www/lms/front
+  tasks:
+    - name: update repo
+      command: git pull
+      args:
+        chdir: "{{ front_path }}"
+
+    - name: Install Angular dependeinces
+      command: npm install
+      args:
+        chdir: "{{ front_path }}"
+
+    - name: Build the Angular project for production
+      shell: ng build --configuration production
+      args:
+        chdir: "{{ angular_app_path }}"
+        executable: /bin/bash
+
+    - name: Update the image
+      command: docker build -t angular-nginx .
+      args:
+        chdir: "{{ front_path }}"
+
+    - name: tag the image
+      command: docker tag angular-nginx:latest youssefkali/angular-nginx:latest
+
+    - name: Push image to Dockerhub
+      command: docker push youssefkali/angular-nginx:latest
+
+    - name: Update the deployment
+      command: kubectl rollout restart deployment angular-nginx

@@ -1,0 +1,24 @@
+- name: Update back
+  hosts: localhost
+  become: yes
+  vars:
+    back_path: /var/www/lms/back
+  tasks:
+    - name: update repo
+      command: git pull
+      args:
+        chdir: "{{ back_path }}"
+
+    - name: Update the image
+      command: docker build -t laravel-lms .
+      args:
+        chdir: "{{ back_path }}"
+
+    - name: tag the image
+      command: docker tag laravel-lms:latest youssefkali/laravel-lms:latest
+
+    - name: Push image to Dockerhub
+      command: docker push youssefkali/laravel-lms:latest
+
+    - name: Update the deployment
+      command: kubectl rollout restart deployment laravel-deplyment
