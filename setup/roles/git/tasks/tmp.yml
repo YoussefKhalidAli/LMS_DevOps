@@ -1,0 +1,19 @@
+- name: Copy back files
+  copy:
+    src: "{{ item }}"
+    dest: "{{ back_path }}"
+  with_items:
+    - ../../../backend/dockerSetup/Dockerfile
+    - ../../../backend/dockerSetup/entrypoint.sh
+    - ../../../backend/dockerSetup/nginx.conf
+
+- name: Ensure k8sSetup directory exists
+  file:
+    path: "{{ back_path }}/k8sSetup"
+    state: directory
+    mode: "0755"
+
+- name: copy deply dir
+  copy:
+    src: ../../../backend/k8sSetup
+    dest: "{{ back_path }}"

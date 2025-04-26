@@ -1,0 +1,3 @@
+---
+master_ip: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+token: "{{ hostvars[groups['master'][0]].master_node_token }}"

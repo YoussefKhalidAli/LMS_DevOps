@@ -1,0 +1,25 @@
+---
+- name: Install system dependencies
+  apt:
+    name:
+      - git
+      - docker.io
+
+- name: Add Node.js 18.x repository
+  ansible.builtin.shell: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+  args:
+    executable: /bin/bash
+
+- name: Install Node.js
+  ansible.builtin.apt:
+    name: nodejs
+    state: present
+    update_cache: yes
+
+- name: Install Angular CLI globally
+  command: npm install -g @angular/cli
+
+- name: Log in to Docker Hub
+  community.docker.docker_login:
+    username: "{{ docker_username }}"
+    password: "{{ docker_password }}"

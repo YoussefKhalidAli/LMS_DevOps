@@ -1,0 +1,15 @@
+---
+- name: Install k3s on master node
+  shell: |
+    curl -sfL https://get.k3s.io | sh -
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Get node token from master
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: node_token_raw
+
+- name: Set fact for master token
+  set_fact:
+    master_node_token: "{{ node_token_raw.content | b64decode | trim }}"

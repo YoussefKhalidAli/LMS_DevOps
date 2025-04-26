@@ -1,0 +1,20 @@
+---
+- name: clone front repo
+  git:
+    repo: https://github.com/Mostafa27z/ai-lms
+    dest: "{{ front_path }}"
+
+- name: clone back repo
+  git:
+    repo: https://github.com/abdelrahim3AA/Learning-Management-Systems-LMS_GP
+    dest: "{{ back_path }}"
+
+- include_tasks: tmp.yml
+
+- name: Copy mysql files from localhost to target server
+  copy:
+    src: "{{ item }}"
+    dest: "{{ back_path }}/k8sSetup/{{ item | basename }}"
+  with_items:
+    - mysql-secrets.yml
+    - mysql-init-script.yml

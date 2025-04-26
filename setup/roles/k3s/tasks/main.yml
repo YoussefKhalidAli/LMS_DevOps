@@ -1,0 +1,6 @@
+---
+- include_tasks: master.yml
+  when: "'master' in group_names"
+
+- include_tasks: worker.yml
+  when: "'slaves' in group_names"

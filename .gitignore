@@ -1,2 +1,4 @@
-backend/k3sSetup/mysql-secrets.yml
-backend/k3sSetup/mysql-init-script.yml
+setup/roles/git/files/mysql-secrets.yml
+setup/roles/git/files/mysql-init-script.yml
+setup/inventory.yml
+setup/dockerCreds.yml
