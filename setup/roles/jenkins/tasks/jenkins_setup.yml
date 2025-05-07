@@ -1,0 +1,38 @@
+- name: Create build context directory
+  file:
+    path: /tmp/jenkins
+    state: directory
+
+- name: Copy jenkins files
+  copy:
+    src: "{{ item }}"
+    dest: "/tmp/jenkins"
+  with_items:
+    - Dockerfile
+    - jenkins-svc-acc.yml
+    - create_jenkins_acc.groovy
+    - front.xml
+    - back.xml
+    - encrypt_pass.groovy
+
+- name: Build Jenkins image from Dockerfile
+  shell: docker build -t ailms-jenkins .
+  args:
+    chdir: /tmp/jenkins
+
+- name: remove old jenkins container
+  shell: |
+    docker stop jenkins
+    docker rm jenkins
+  ignore_errors: yes
+
+- name: Start jenkins server
+  command: >
+    docker run --name jenkins -d -p 8080:8080 -p 50000:50000
+    -v jenkins_data:/var/jenkins_home
+    -v /var/run/docker.sock:/var/run/docker.sock
+    -e JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    -e DOCKER_USER={{ docker_username }}
+    -e DOCKER_PASS={{ docker_password }}
+    --user root \
+    ailms-jenkins

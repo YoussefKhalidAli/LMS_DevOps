@@ -1,11 +1,5 @@
-- name: Set up K3s Cluster
-  hosts: all
-  become: yes
-  roles:
-    - role: k3s
-
 - name: Deploy ai-lms project
-  hosts: master
+  hosts: server
   vars:
     front_path: /var/www/lms/front
     back_path: /var/www/lms/back
@@ -13,6 +7,8 @@
     - dockerCreds.yml
   become: yes
   roles:
+    - role: k3s
     - role: common
     - role: git
     - role: deploy
+    - role: jenkins

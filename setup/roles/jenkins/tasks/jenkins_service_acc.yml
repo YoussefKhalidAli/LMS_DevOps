@@ -1,0 +1,16 @@
+- name: Deploy jenkins service account and role binding
+  command: kubectl apply -f jenkins-svc-acc.yml
+  args:
+    chdir: /tmp/jenkins
+
+- name: Create config from template
+  template:
+    src: config.yml.j2
+    dest: /etc/rancher/k3s/config.yml
+  vars:
+    server_ip: "{{ kube_ip.stdout }}"
+
+- name: Restart k3s service
+  service:
+    name: k3s
+    state: restarted

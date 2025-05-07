@@ -1,0 +1,11 @@
+remove node and anguklar/cli if not needed
+
+mysql-deployment:
+
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"

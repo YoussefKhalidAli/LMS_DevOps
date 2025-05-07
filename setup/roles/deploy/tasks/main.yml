@@ -10,35 +10,26 @@
 
 - name: Wait for at least one Laravel pod to be ready
   shell: |
-    kubectl wait --for=condition=ready pod -l app=laravel --timeout=120s
+    kubectl wait --for=condition=ready pod -l app=laravel --timeout=180s
 
-- name: Wait for MySQL pod to be ready
-  shell: |
-    kubectl wait --for=condition=ready pod -l app=mysql --timeout=120s
-
-- name: Wait for MySQL pod to be ready
-  shell: |
-    kubectl wait --for=condition=ready pod -l app=mysql --timeout=120s
-  register: mysql_ready
-  until: mysql_ready.rc == 0
-  retries: 10
-  delay: 10
 - name: Get the name of one Laravel pod
   shell: |
     kubectl get pods -l app=laravel -o jsonpath="{.items[0].metadata.name}"
   register: laravel_pod_name
 
+- name: Wait for MySQL pod to be ready
+  shell: |
+    kubectl wait --for=condition=ready pod -l app=mysql --timeout=180s
+
+- name: Wait for MySQL service to be ready
+  shell: |
+    kubectl wait --for=condition=ready pod -l app=mysql --timeout=120s
+  register: mysql_ready
+  until: mysql_ready.rc == 0
+  retries: 20
+  delay: 10
+
 - name: Run Laravel migrations on just one pod
   shell: |
     kubectl exec {{ laravel_pod_name.stdout }} -- php artisan migrate --force
-
-- name: Start jenkins server
-  command: >
-    docker run --name jenkins -d -p 8080:8080 -p 50000:50000
-    -v jenkins_data:/var/jenkins_home
-    -v /var/run/docker.sock:/var/run/docker.sock
-    jenkins/jenkins:lts
-
-- name: Show jenkins setup reminder
-  debug:
-    msg: "Playbook has finished running. Please remember to set up Jenkins"
+  ignore_errors: yes

@@ -1,23 +1,42 @@
----
 - name: Install system dependencies
   apt:
     name:
       - git
       - docker.io
-
-- name: Add Node.js 18.x repository
-  ansible.builtin.shell: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-  args:
-    executable: /bin/bash
-
-- name: Install Node.js
-  ansible.builtin.apt:
-    name: nodejs
+      - openjdk-17-jre-headless
     state: present
     update_cache: yes
 
-- name: Install Angular CLI globally
+- name: Check if Node.js is installed
+  command: node -v
+  register: node_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Install Node.js using official NodeSource role
+  include_role:
+    name: nodesource.node
+  vars:
+    nodejs_version: "18.x"
+  when: node_check.rc != 0
+
+- name: Check if npm is installed
+  command: npm -v
+  register: npm_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Check if Angular CLI is installed
+  command: ng version
+  register: ng_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Install Angular CLI globally (only if not installed)
   command: npm install -g @angular/cli
+  when: npm_check.rc == 0 and ng_check.rc != 0
+  environment:
+    PATH: "/usr/bin:/usr/local/bin:{{ ansible_env.PATH }}"
 
 - name: Log in to Docker Hub
   community.docker.docker_login:

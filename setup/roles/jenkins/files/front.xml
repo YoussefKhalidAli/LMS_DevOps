@@ -1,0 +1,94 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.40">
+  <description>Docker build and deploy pipeline</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition">
+    <script>
+      pipeline {
+        agent any
+
+        environment {
+          DOCKER_USERNAME = credentials('dockerhub-credentials')
+          DOCKER_PASSWORD = credentials('dockerhub-credentials')
+          REGISTRY_URL = 'docker.io'
+          IMAGE_NAME = 'youssefkali/angular-nginx'
+        }
+
+        stages {
+          stage('Pull Code') {
+            steps {
+              script {
+                git url: 'https://github.com/Mostafa27z/ai-lms.git', branch: "main"
+              }
+            }
+          }
+
+          stage('Build Docker Image') {
+            steps {
+              script {
+                sh 'docker build -t ${IMAGE_NAME}:latest .'
+              }
+            }
+          }
+
+          stage('Tag Docker Image') {
+            steps {
+              script {
+                env.gitCommitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.gitCommitHash}"
+              }
+            }
+          }
+
+          stage('Push Docker Image') {
+            steps {
+              withCredentials([usernamePassword(
+                credentialsId: 'dockerhub-credentials',
+                usernameVariable: 'DOCKER_USERNAME',
+                passwordVariable: 'DOCKER_PASSWORD'
+              )]) {
+                script {
+                  sh """#!/bin/bash
+                  echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                  docker push \$IMAGE_NAME:${env.gitCommitHash}
+                  """
+                }
+              }
+            }
+          }
+
+          stage('Deploy') {
+            steps {
+              withCredentials([file(credentialsId: 'jenkins-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
+                sh """
+                    export KUBECONFIG=${env.KUBECONFIG_FILE}
+                    kubectl set image deployment/angular-nginx angular-nginx=${env.IMAGE_NAME}:${env.gitCommitHash}
+                """
+              }
+            }
+          }
+        }
+
+        post {
+          always {
+            sh 'docker system prune -f'
+          }
+
+          success {
+            echo 'Build and deployment successful!'
+          }
+
+          failure {
+            echo 'Something went wrong. Check the logs!'
+          }
+        }
+      }
+    </script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <builders/>
+  <publishers/>
+  <buildWrappers/>
+</flow-definition>

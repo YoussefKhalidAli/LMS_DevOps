@@ -1,6 +1,12 @@
 ---
-- include_tasks: master.yml
-  when: "'master' in group_names"
+#- include_tasks: master.yml
+#  when: "'master' in group_names"
 
-- include_tasks: worker.yml
-  when: "'slaves' in group_names"
+#- include_tasks: worker.yml
+#  when: "'slaves' in group_names"
+
+- name: Install k3s on server
+  shell: |
+    curl -sfL https://get.k3s.io | sh -
+  args:
+    creates: /usr/local/bin/k3s

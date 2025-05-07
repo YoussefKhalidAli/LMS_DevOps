@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: laravel-deployment
 spec:
-  replicas: 1
+  replicas: 4
   selector:
     matchLabels:
       app: laravel
@@ -13,27 +13,29 @@ spec:
         app: laravel
     spec:
       initContainers:
-      - name: init-storage
-        image: busybox
-        command: ['sh', '-c', '
-          mkdir -p /mnt/storage/app/public &&
-          mkdir -p /mnt/storage/framework/cache &&
-          mkdir -p /mnt/storage/framework/views &&
-          mkdir -p /mnt/storage/framework/sessions &&
-          mkdir -p /mnt/storage/logs &&
-          mkdir -p /mnt/bootstrap-cache &&
-          chown -R 82:82 /mnt/storage &&
-          chmod -R 777 /mnt/storage &&
-          chmod -R 777 /mnt/bootstrap-cache
-        ']
-        volumeMounts:
-        - name: storage
-          mountPath: /mnt/storage
-        - name: bootstrap-cache
-          mountPath: /mnt/bootstrap-cache
+        - name: init-storage
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /mnt/storage/app/public && \
+              mkdir -p /mnt/storage/framework/cache && \
+              mkdir -p /mnt/storage/framework/views && \
+              mkdir -p /mnt/storage/framework/sessions && \
+              mkdir -p /mnt/storage/logs && \
+              mkdir -p /mnt/bootstrap-cache && \
+              chown -R 82:82 /mnt/storage && \
+              chmod -R 775 /mnt/storage && \
+              chmod -R 775 /mnt/bootstrap-cache
+          volumeMounts:
+            - name: storage
+              mountPath: /mnt/storage
+            - name: bootstrap-cache
+              mountPath: /mnt/bootstrap-cache
       containers:
         - name: laravel
-          image: youssefkali/laravel-lms:latest
+          image: youssefkali/laravel-lms
           ports:
             - containerPort: 80
           env:
@@ -67,6 +69,13 @@ spec:
               mountPath: /var/www/html/storage
             - name: bootstrap-cache
               mountPath: /var/www/html/bootstrap/cache
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
       volumes:
         - name: storage
           persistentVolumeClaim:
