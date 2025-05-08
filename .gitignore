@@ -4,4 +4,3 @@ setup/inventory.yml
 setup/Creds.yml
 setup/roles/jenkins/files/create_jenkins_acc.groovy
 setup/roles/jenkins/files/encrypt_pass.groovy
-setup/roles/jenkins/files/credentials.xml
