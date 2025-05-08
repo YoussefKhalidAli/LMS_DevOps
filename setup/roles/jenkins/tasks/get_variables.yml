@@ -5,7 +5,3 @@
 - name: Get Kubernetes API server IP
   shell: hostname -I | awk '{print $1}'
   register: kube_ip
-
-- name: Get jenkins token
-  shell: kubectl get secret jenkins-deployer-token -o jsonpath='{.data.token}' | base64 --decode
-  register: jenkins_token

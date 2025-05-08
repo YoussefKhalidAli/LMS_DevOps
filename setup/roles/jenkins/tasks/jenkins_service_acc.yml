@@ -10,6 +10,10 @@
   vars:
     server_ip: "{{ kube_ip.stdout }}"
 
+- name: Get jenkins token
+  shell: kubectl get secret jenkins-deployer-token -o jsonpath='{.data.token}' | base64 --decode
+  register: jenkins_token
+
 - name: Restart k3s service
   service:
     name: k3s

@@ -1,8 +1,7 @@
 setup/roles/git/files/mysql-secrets.yml
 setup/roles/git/files/mysql-init-script.yml
 setup/inventory.yml
-setup/dockerCreds.yml
+setup/Creds.yml
 setup/roles/jenkins/files/create_jenkins_acc.groovy
 setup/roles/jenkins/files/encrypt_pass.groovy
 setup/roles/jenkins/files/credentials.xml
-setup/roles/jenkins/files/back.xml

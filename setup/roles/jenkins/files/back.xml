@@ -10,13 +10,13 @@
 
         environment {
           REGISTRY_URL = 'docker.io'
-          IMAGE_NAME = 'youssefkali/angular-nginx'
+          IMAGE_NAME = 'youssefkali/laravel-lms'
         }
 
         stages {
           stage('Pull Code') {
             steps {
-              git url: 'https://github.com/Mostafa27z/ai-lms.git', branch: "main"
+              git url: 'https://github.com/abdelrahim3AA/Learning-Management-Systems-LMS_GP', branch: "main"
             }
           }
 
@@ -54,7 +54,7 @@
             steps {
               withCredentials([file(credentialsId: 'jenkins-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
                 withEnv(["KUBECONFIG=$KUBECONFIG_FILE"]) {
-                  sh 'kubectl set image deployment/angular-nginx angular-nginx=$IMAGE_NAME:$gitCommitHash'
+                  sh 'kubectl set image deployment/laravel-deployment laravel=$IMAGE_NAME:$gitCommitHash'
                 }
               }
             }

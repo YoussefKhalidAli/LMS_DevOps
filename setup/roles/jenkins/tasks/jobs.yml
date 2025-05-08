@@ -1,0 +1,9 @@
+- name: Create Jenkins job for front-end
+  shell: |
+    docker exec jenkins mkdir -p /var/jenkins_home/jobs/back
+    docker cp /tmp/jenkins/back.xml jenkins:/var/jenkins_home/jobs/back/config.xml
+
+- name: Create Jenkins job for front-end
+  shell: |
+    docker exec jenkins mkdir -p /var/jenkins_home/jobs/front
+    docker cp /tmp/jenkins/front.xml jenkins:/var/jenkins_home/jobs/front/config.xml

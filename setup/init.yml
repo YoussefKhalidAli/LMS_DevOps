@@ -4,7 +4,7 @@
     front_path: /var/www/lms/front
     back_path: /var/www/lms/back
   vars_files:
-    - dockerCreds.yml
+    - Creds.yml
   become: yes
   roles:
     - role: k3s

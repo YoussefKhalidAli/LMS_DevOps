@@ -2,18 +2,10 @@
 
 - import_tasks: get_variables.yml
 
-- import_tasks: ufw_rules.yml
-
 - import_tasks: jenkins_service_acc.yml
 
-- name: Create Jenkins job for front-end
-  shell: |
-    docker exec jenkins mkdir -p /var/jenkins_home/jobs/back
-    docker cp /tmp/jenkins/back.xml jenkins:/var/jenkins_home/jobs/back/config.xml
+- import_tasks: ufw_rules.yml
 
-- name: Create Jenkins job for front-end
-  shell: |
-    docker exec jenkins mkdir -p /var/jenkins_home/jobs/front
-    docker cp /tmp/jenkins/front.xml jenkins:/var/jenkins_home/jobs/front/config.xml
+- import_tasks: jobs.yml
 
 - import_tasks: credentials.yml
